@@ -1,7 +1,9 @@
 import streamlit as st
+import textwrap
 import time
 import base64
 from io import BytesIO
+from PIL import Image
 
 def image_to_base64(image):
     buffered = BytesIO()
@@ -24,14 +26,14 @@ def render_identifying_screen():
     img_b64 = image_to_base64(image)
     
     # We display the scanning animation using HTML/CSS
-    st.markdown(f"""
+    st.markdown(textwrap.dedent(f"""
         <div class="scanner-container">
             <img class="scanner-image" src="data:image/jpeg;base64,{img_b64}" />
             <div class="scanner-line"></div>
         </div>
         <div class="identifying-text">IDENTIFYING PLANT…</div>
         <div style="text-align: center; color: var(--bark); font-family: var(--font-sans); margin-top: 0.5rem;">Analyzing visual features</div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
     
     # Notice we don't actually call the service directly in the render method if it blocks,
     # but Streamlit reruns from top to bottom. Since we want the animation to render first, 

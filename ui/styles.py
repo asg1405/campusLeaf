@@ -1,7 +1,8 @@
 import streamlit as st
+import textwrap
 
 def inject_styles():
-    st.markdown("""
+    st.markdown(textwrap.dedent("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
 
@@ -352,13 +353,13 @@ def inject_styles():
             header {visibility: hidden;}
             footer {visibility: hidden;}
         </style>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
 
 def render_top_bar(status="READY"):
     status_class = f"status-{status.lower().replace(' ', '-')}"
-    st.markdown(f"""
+    st.markdown(textwrap.dedent(f"""
         <div class="top-bar">
             <div>CAMPUS PLANT ID</div>
             <div class="{status_class}">● {status}</div>
         </div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
