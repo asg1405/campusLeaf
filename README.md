@@ -1,112 +1,258 @@
-# Campus Plant ID — Phase 2: Supabase Integration
+# Campus Plant ID 🌿
 
-Campus Plant ID is a digital herbarium application for discovering, identifying, and locating botanical specimens across campus.
+**Campus Plant ID** is a Streamlit-based digital herbarium that identifies selected plant species from photographs and checks whether the identified species exists in the campus plant catalog.
 
----
+The application combines a locally running MobileNetV2 image-classification model, a Supabase PostgreSQL database, and a botanical herbarium-inspired interface.
 
-## 🏗️ Architecture & Integration Points
+## ✨ Features
 
-The application is structured into decoupled layers, ensuring that the machine learning service, backend database, and user interface remain modular and interchangeable:
+- **Local plant identification:** Predicts plant species using a trained MobileNetV2 model without external plant-identification APIs.
+- **Four supported species:** Identifies False Ashoka, Jackfruit, Malabar Plum, and Pongam.
+- **Supabase integration:** Retrieves plant information and campus catalog records from Supabase.
+- **Confidence scores:** Displays the model's prediction confidence.
+- **Specimen cards:** Presents botanical information through a herbarium-inspired interface.
+- **Catalog status:** Distinguishes plants found in the campus database from identified plants that are not catalogued.
+- **Responsive interface:** Designed for students to use while exploring the campus.
+
+## 🌱 Supported Plant Species
+
+| Common Name | Scientific Name | Family |
+|---|---|---|
+| False Ashoka | *Monoon longifolium* | Annonaceae |
+| Jackfruit | *Artocarpus heterophyllus* | Moraceae |
+| Malabar Plum | *Syzygium cumini* | Myrtaceae |
+| Pongam | *Pongamia pinnata* | Fabaceae |
+
+The classifier is trained to recognize these four classes. It is not a general-purpose plant identification system.
+
+## 🧠 Machine Learning Model
+
+The application uses a locally stored MobileNetV2 transfer-learning model.
+
+- **Architecture:** MobileNetV2
+- **Framework:** TensorFlow / Keras
+- **Model file:** `models/campus_plant_id_mobilenetv2.keras`
+- **Input image size:** 224 × 224 pixels
+- **Inference:** Local model execution
+- **Output:** Predicted species and confidence score
+
+The reported evaluation achieved **98.82% accuracy (84 correct predictions out of 85 test images)**.
+
+This is a preliminary result from a relatively small test set. Performance on unseen campus photographs, different lighting conditions, backgrounds, and camera devices requires further evaluation. The confidence score should not be interpreted as a guarantee of identification correctness.
+
+### Identification Workflow
+
+1. The user uploads a plant photograph.
+2. The image is preprocessed for the local model.
+3. MobileNetV2 predicts one of the supported species.
+4. The application retrieves the corresponding plant information from Supabase.
+5. The interface displays the specimen card or an appropriate catalog/error state.
 
 ```text
-User
- ↓
-Streamlit UI (Design 2 Aesthetic)
- ↓
-Image Upload / Camera
- ↓
-Plant Identifier Service (Mock ML — Phase 3 target)
- ↓
-Campus Repository Service (Abstraction Boundary)
- ↓
-Supabase PostgreSQL Database (Phase 2 Integration)
- ↓
-Digital Specimen Card
+Plant Photograph
+       |
+       v
+Image Preprocessing
+       |
+       v
+Local MobileNetV2 Model
+       |
+       v
+Predicted Species + Confidence
+       |
+       v
+Supabase Catalog Lookup
+       |
+       +----------------------+
+       |                      |
+       v                      v
+Plant Record Found      Record Not Found
+       |                      |
+       v                      v
+Specimen Card           Not Catalogued State
 ```
 
-- **`app.py`**: State orchestrator managing the workflow (`IDLE` $\rightarrow$ `IMAGE_SELECTED` $\rightarrow$ `IDENTIFYING` $\rightarrow$ `FOUND` / `NOT_CATALOGUED` / `ERROR`).
-- **`services/plant_identifier.py`**: Exposes `identify_plant(image)`. Currently runs mock ML predictions.
-  > *Note: The ML identification service is currently mocked and will be replaced by the real plant classification model in Phase 3.*
-- **`services/campus_repository.py`**: Exposes `campus_lookup(scientific_name)` to query the database.
-- **`services/supabase_client.py`**: Safely retrieves configuration and initializes the official Supabase client.
-- **`models/plant.py`**: Application data models (`PlantPrediction`, `CampusPlantRecord`, `CampusLocation`).
-- **`ui/`**: Herbarium field-journal visual components (Design 2), custom typography, scan radar animations, and specimen cards.
+## 🛠️ Technology Stack
 
----
+| Component | Technology |
+|---|---|
+| Frontend | Streamlit |
+| Programming Language | Python |
+| Machine Learning | TensorFlow / Keras |
+| Model Architecture | MobileNetV2 |
+| Image Processing | Pillow |
+| Database | Supabase PostgreSQL |
+| Database Client | Supabase Python Client |
+| Configuration | python-dotenv |
 
-## 🗄️ Database Schema
+## 📂 Project Structure
 
-The Supabase relational schema consists of:
+The main application components are organized as follows:
 
-### `plants` Table
-- `id` (UUID, Primary Key, auto-generated)
-- `common_name` (TEXT, NOT NULL)
-- `scientific_name` (TEXT, UNIQUE, NOT NULL, indexed with `LOWER(scientific_name)`)
-- `family` (TEXT, NOT NULL)
-- `description` (TEXT)
-- `uses` (TEXT[])
-- `facts` (TEXT[])
-- `image_url` (TEXT, ready for Supabase Storage in future phases)
-- `created_at` (TIMESTAMPTZ)
-- `updated_at` (TIMESTAMPTZ)
+```text
+campusLeaf/
+├── app.py
+├── services/
+│   ├── plant_identifier.py
+│   └── campus_repository.py
+├── models/
+│   ├── plant.py
+│   └── campus_plant_id_mobilenetv2.keras
+├── ui/
+│   ├── identification.py
+│   ├── specimen_card.py
+│   └── styles.py
+├── requirements.txt
+├── .env.example
+└── README.md
+```
 
-### `campus_locations` Table (One-to-Many)
-- `id` (UUID, Primary Key, auto-generated)
-- `plant_id` (UUID, Foreign Key $\rightarrow$ `plants.id`, ON DELETE CASCADE, indexed)
-- `location_name` (TEXT, NOT NULL)
-- `latitude` (NUMERIC, optional)
-- `longitude` (NUMERIC, optional)
-- `description` (TEXT, optional)
-- `created_at` (TIMESTAMPTZ)
+This is a representative overview of the main components. Additional files, assets, and tests may exist in the repository.
 
----
+## ⚙️ Installation and Setup
 
-## 🚀 Setup & Installation
+### Prerequisites
 
-### 1. Install Dependencies
+- Python compatible with the versions specified in `requirements.txt`
+- Git
+- A configured Supabase project
+- Access to the project's model file and source code
+
+### 1. Clone the Repository
+
 ```bash
+git clone <repository-url>
+cd campusLeaf
+```
+
+Replace `<repository-url>` with the actual GitHub repository URL.
+
+### 2. Create a Virtual Environment
+
+Linux / macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Create and Configure Supabase Project
-1. Log in to [Supabase](https://supabase.com) and create a new project.
-2. In the Supabase dashboard, open the **SQL Editor**.
-3. Copy the contents of [`scripts/setup_supabase.sql`](file:///c:/github/avinashProject/campus-plant-id/scripts/setup_supabase.sql) into the editor and click **Run** to generate tables, indexes, and RLS policies.
+Keep TensorFlow and NumPy versions compatible with those specified in the project's dependency configuration.
 
-### 3. Configure Credentials
-Create a `.env` file in the `campus-plant-id` folder (or configure Streamlit secrets in `.streamlit/secrets.toml`):
+### 4. Configure Supabase
 
-```bash
-cp .env.example .env
-```
+Create a `.env` file in the project root using `.env.example` as a reference.
 
-Edit `.env` and fill in your Supabase project credentials:
+Example:
+
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_publishable_or_anon_key
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_KEY=your-supabase-key
 ```
 
-> **Security Note:** Use your project's **publishable / anon** API key. Do **NOT** use or configure the `service_role` key in the Streamlit application. The `service_role` key bypasses Row Level Security (RLS) with elevated administrative privileges and must never be exposed or bundled in client-facing applications.
+Replace the example values with the credentials expected by the current application configuration.
 
-*(Never commit your `.env` or `.streamlit/secrets.toml` file. These are protected in `.gitignore`.)*
+Ensure that the Supabase project contains the required tables, records, and access policies.
 
-### 4. Seed Campus Plant Demo Data
-To populate your Supabase database with the initial campus flora dataset:
-```bash
-python scripts/seed_demo_data.py
-```
+**Security notes:**
+- Never commit `.env` to GitHub.
+- Never expose Supabase service-role keys in public code.
+- Use appropriate Row Level Security (RLS) policies and least-privilege access.
 
 ### 5. Run the Application
+
 ```bash
 streamlit run app.py
 ```
 
----
+Open the local URL printed by Streamlit, usually:
 
-## 🧪 Application States
+```text
+http://localhost:8501
+```
 
-- **`READY / IDLE`**: Drag & drop a plant photo or use camera capture.
-- **`IDENTIFYING`**: Visual scan-line radar animation simulating ML processing.
-- **`FOUND`**: Specimen found in campus botanical records. Displays specimen card with locations, uses, and facts.
-- **`NOT_CATALOGUED`**: Plant is identified by the ML service, but is not yet recorded in the campus flora registry.
-- **`ERROR`**: Graceful service notice for network issues or unconfigured credentials with instant retry.
+## 🧪 Testing
+
+Run the existing Supabase integration tests from the project root:
+
+```bash
+python -m pytest test_supabase_integration.py test_supabase_pipeline.py
+```
+
+If the project uses additional test configuration, follow the repository's current setup.
+
+Recommended manual checks:
+
+1. Upload photographs from all four supported species.
+2. Verify the predicted species and confidence score.
+3. Verify the result when a corresponding Supabase record exists.
+4. Verify the not-catalogued state when no matching record exists.
+5. Verify that database errors are not incorrectly displayed as missing records.
+6. Test unsupported images, corrupt files, and low-confidence predictions.
+7. Check the interface on both desktop and mobile-sized screens.
+
+## 🗄️ Database Integration
+
+Supabase serves as the application's campus plant catalog.
+
+The machine-learning model and database have separate responsibilities:
+
+- The **ML model** predicts a likely plant species from the uploaded image.
+- **Supabase** stores and retrieves catalog information associated with that species.
+- The **Streamlit interface** presents the identification result and catalog status.
+
+A successful prediction does not necessarily mean the plant has been documented on campus. Similarly, a missing database record does not automatically mean the ML prediction failed.
+
+Catalog records, scientific names, and campus locations should be verified rather than fabricated.
+
+## 🔒 External API Policy
+
+Campus Plant ID performs plant identification locally using its trained model.
+
+- No external plant-identification API is required.
+- No API-based prediction validation is used.
+- No external identification service is used as a runtime fallback.
+- No third-party API key is needed for plant identification.
+
+External image datasets may be considered for future local model training or evaluation, subject to appropriate licensing and data-quality checks. Using a dataset does not require calling an external identification API at runtime.
+
+## 🚧 Limitations
+
+- The current classifier recognizes only four trained plant species.
+- Unfamiliar plants may be incorrectly assigned to one of the supported classes.
+- Model confidence is not proof of correctness.
+- The reported test accuracy comes from a small test set.
+- Identification accuracy depends on image quality and similarity to the training data.
+- Campus location information depends on the completeness and accuracy of database records.
+- Further evaluation using independent campus photographs is recommended before relying on the system operationally.
+
+## 🔮 Future Improvements
+
+Potential improvements include:
+
+- Expanding the supported campus plant collection.
+- Collecting more diverse, verified training images.
+- Evaluating the model on independent photographs from the campus.
+- Reporting per-class precision, recall, F1-score, and a confusion matrix.
+- Improving handling of unknown species and low-confidence predictions.
+- Adding verified campus locations and additional botanical information.
+- Improving accessibility and mobile usability.
+
+Any replacement model should be evaluated before being adopted, and the existing Supabase integration and interface should be preserved unless a change is explicitly required.
+
+## 📄 License
+
+Add the project's chosen license before publishing or redistributing the repository.
