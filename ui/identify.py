@@ -82,6 +82,42 @@ def _plant_coords(plant_id: str) -> List[Dict[str, Any]]:
         return []
 
 
+def _mini_map_html(pins: List[Dict[str, Any]], lat: float, lng: float) -> str:
+    """Build a self-contained Leaflet mini-map HTML snippet for the given pins."""
+    markers = []
+    for p in pins:
+        name = html.escape(str(p.get("name", "")))
+        desc = html.escape(str(p.get("desc") or ""))
+        lat_p = float(p["lat"])
+        lng_p = float(p["lng"])
+        markers.append(
+            f'    L.marker([{lat_p}, {lng_p}], {{title: "{name}"}})'
+            f'.addTo(map).bindPopup("<b>{name}</b><br>{desc}");'
+        )
+    markers_js = "\n".join(markers)
+    return f"""<!doctype html>
+<html>
+<head>
+  <link rel="stylesheet" href="{LEAFLET_CSS}"/>
+  <style>
+    html, body, #map {{ height: 100%; margin: 0; background: #F9FAF7; font-family: inherit; }}
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="{LEAFLET_JS}"></script>
+  <script>
+    const map = L.map('map', {{zoomControl: true}}).setView([{float(lat)}, {float(lng)}], 17);
+    L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }}).addTo(map);
+{markers_js}
+  </script>
+</body>
+</html>"""
+
+
 def _run_inference(pil_image: Image.Image, source: str):
     _reset_identify()
     st.session_state["id_image"] = pil_image
